@@ -22,8 +22,20 @@ const processMessage = asyncHandler(async (req, res) => {
   // Generate a unique session ID for the user
   const sessionId = req.user ? req.user._id.toString() : uuid.v4();
 
-  // Create a new session
-  const sessionClient = new dialogflow.SessionsClient();
+  // Parse credentials from Render environment variable if available
+  let credentialsOptions = {};
+  if (process.env.DIALOGFLOW_KEY_JSON) {
+    try {
+      credentialsOptions = {
+        credentials: JSON.parse(process.env.DIALOGFLOW_KEY_JSON)
+      };
+    } catch (e) {
+      console.error("Failed to parse DIALOGFLOW_KEY_JSON environment variable:", e);
+    }
+  }
+
+  // Create a new session with dynamic credentials
+  const sessionClient = new dialogflow.SessionsClient(credentialsOptions);
   const sessionPath = sessionClient.projectAgentSessionPath(projectId, sessionId);
 
   const request = {
