@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, MapPin, ScanLine, WalletCards, ShieldCheck } from 'lucide-react';
+import { ArrowRight, LineChart, ScanLine, WalletCards, ShieldCheck } from 'lucide-react';
 
 const LandingPage = () => {
   const features = [
@@ -15,9 +15,9 @@ const LandingPage = () => {
       description: 'Auto-deduct fares and earn FareWave reward coins.',
     },
     {
-      icon: <MapPin className="h-8 w-8 text-green-500" />,
-      title: 'Live Tracking',
-      description: 'Track your bus in real-time with animated map updates.',
+      icon: <LineChart className="h-8 w-8 text-green-500" />,
+      title: 'Ride & Expense Tracking',
+      description: 'Track your transit expenses and ride history daily, weekly, and monthly.',
     },
     {
       icon: <ShieldCheck className="h-8 w-8 text-yellow-500" />,
