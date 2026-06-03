@@ -69,7 +69,10 @@ const LandingPage = () => {
             Get Started
             <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </Link>
-          <button className="px-8 py-4 rounded-full glass border border-gray-600 text-white font-bold text-lg hover:bg-gray-800/50 transition-all">
+          <button 
+            onClick={() => window.dispatchEvent(new Event('open-chatbot'))}
+            className="px-8 py-4 rounded-full glass border border-gray-600 text-white font-bold text-lg hover:bg-gray-800/50 transition-all"
+          >
             Meet Rexa AI
           </button>
         </motion.div>

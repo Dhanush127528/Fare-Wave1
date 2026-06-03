@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import { toPng } from 'html-to-image';
 import { QRCodeCanvas } from 'qrcode.react';
+import { useAuthStore } from '../store/authStore';
 
 // Sub-component for rendering the ticket bubble
 const ChatTicketCard = ({ ticket }) => {
@@ -75,10 +76,9 @@ const ChatTicketCard = ({ ticket }) => {
 };
 
 const Chatbot = () => {
+  const { user } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    { id: 1, text: "Hi! I'm Rexa. How can I help you today?", sender: 'bot' }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -96,6 +96,24 @@ const Chatbot = () => {
       }
     }
   }, [location.pathname]);
+
+  // Update welcome message based on auth status
+  useEffect(() => {
+    setMessages([
+      { 
+        id: 1, 
+        text: user ? "Hi! I'm Rexa. How can I help you today?" : "Hi! I'm Rexa. To book tickets and use my AI features, you must login first!", 
+        sender: 'bot' 
+      }
+    ]);
+  }, [user]);
+
+  // Listen for 'open-chatbot' event from other components (like LandingPage)
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener('open-chatbot', handleOpen);
+    return () => window.removeEventListener('open-chatbot', handleOpen);
+  }, []);
 
   // Speech Recognition Setup
   const recognitionRef = useRef(null);
@@ -174,6 +192,22 @@ const Chatbot = () => {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setLoading(true);
+
+    if (!user) {
+      setTimeout(() => {
+        setMessages(prev => [...prev, { 
+          id: Date.now() + 1, 
+          text: "Please login to continue chatting! Redirecting you now...", 
+          sender: 'bot' 
+        }]);
+        setLoading(false);
+        setTimeout(() => {
+          navigate('/auth');
+          setIsOpen(false);
+        }, 2000);
+      }, 1000);
+      return;
+    }
 
     try {
       const { data } = await api.post('/chatbot/message', { message: userMessage.text });
