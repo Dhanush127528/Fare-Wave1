@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Environment Variables
+.env
+.env.local
+.env.development
+.env.test
+.env.test
+.env.production
+backend/.env
+frontend/.env
+backend/dialogflow-key.json
+
+# Build outputs
+dist/
+build/
+frontend/dist/
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
