@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import api from '../api/axiosConfig';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -8,6 +8,33 @@ const RideHistory = () => {
   const [history, setHistory] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [timeframe, setTimeframe] = useState('monthly');
+
+  const chartData = useMemo(() => {
+    if (!history.length) return [];
+    const completed = history.filter(r => r.status === 'Completed');
+    const dataMap = {};
+
+    completed.forEach(ride => {
+      const date = new Date(ride.createdAt || ride.checkInTime);
+      let key;
+      if (timeframe === 'daily') {
+        key = date.toLocaleDateString('default', { month: 'short', day: 'numeric' });
+      } else if (timeframe === 'weekly') {
+        const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+        const dayOfMonth = date.getDate();
+        const weekNum = Math.ceil((dayOfMonth + firstDayOfMonth.getDay()) / 7);
+        key = `Week ${weekNum}, ${date.toLocaleDateString('default', { month: 'short' })}`;
+      } else {
+        key = date.toLocaleDateString('default', { month: 'short' });
+      }
+
+      if (!dataMap[key]) dataMap[key] = { name: key, spent: 0 };
+      dataMap[key].spent += ride.fare || 0;
+    });
+
+    return Object.values(dataMap);
+  }, [history, timeframe]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -68,10 +95,23 @@ const RideHistory = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Chart */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }} className="lg:col-span-2 glass-dark p-6 rounded-3xl border border-gray-700/50 h-[400px]">
-          <h3 className="text-xl font-bold mb-6">Monthly Spending</h3>
-          {analytics?.monthlyChart?.length > 0 ? (
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-bold">Spending Trends</h3>
+            <div className="flex bg-gray-800 rounded-lg p-1">
+              {['daily', 'weekly', 'monthly'].map(tf => (
+                <button
+                  key={tf}
+                  onClick={() => setTimeframe(tf)}
+                  className={`px-3 py-1 text-sm rounded-md capitalize transition-colors ${timeframe === tf ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'}`}
+                >
+                  {tf}
+                </button>
+              ))}
+            </div>
+          </div>
+          {chartData?.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analytics.monthlyChart}>
+              <BarChart data={chartData}>
                 <XAxis dataKey="name" stroke="#9ca3af" />
                 <YAxis stroke="#9ca3af" />
                 <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{backgroundColor: '#1f2937', border: 'none', borderRadius: '12px'}} />
@@ -79,7 +119,7 @@ const RideHistory = () => {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-gray-500">No data available</div>
+            <div className="h-full flex items-center justify-center text-gray-500 pb-16">No data available</div>
           )}
         </motion.div>
 
