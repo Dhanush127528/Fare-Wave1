@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, X, Send, Bot, User, Download, MapPin, Mic } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import { toPng } from 'html-to-image';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -84,6 +84,18 @@ const Chatbot = () => {
   const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Auto-open chatbot when arriving at Dashboard for the first time
+  useEffect(() => {
+    if (location.pathname === '/dashboard') {
+      const hasAutoOpened = sessionStorage.getItem('rexaAutoOpened');
+      if (!hasAutoOpened) {
+        setIsOpen(true);
+        sessionStorage.setItem('rexaAutoOpened', 'true');
+      }
+    }
+  }, [location.pathname]);
 
   // Speech Recognition Setup
   const recognitionRef = useRef(null);

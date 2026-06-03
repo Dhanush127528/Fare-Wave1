@@ -19,7 +19,10 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cors({
-  origin: 'http://localhost:5173', // Vite default port
+  origin: function (origin, callback) {
+    // Allow any origin for interview deployment purposes (Vercel)
+    callback(null, true);
+  },
   credentials: true
 }));
 app.use(cookieParser());
