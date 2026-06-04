@@ -24,28 +24,28 @@ const checkIn = asyncHandler(async (req, res) => {
       res.status(400);
       throw new Error('Ticket has already been used or does not exist');
     }
+
+    // Create a new ongoing ride
+    const ride = await Ride.create({
+      user: ticket.user,
+      ticket: ticket._id,
+      source: ticket.source,
+      destination: ticket.destination,
+      fare: ticket.fareEstimate,
+      distance: ticket.distanceEstimate,
+      checkInTime: new Date(),
+      status: 'Ongoing'
+    });
+
+    // Mark ticket as Used
+    ticket.status = 'Used';
+    await ticket.save();
+
+    res.status(200).json({ message: 'Checked in successfully', ride });
   } catch (error) {
     res.status(400);
-    throw new Error(error.name === 'TokenExpiredError' ? 'Ticket has expired' : 'Invalid or forged ticket signature');
+    throw new Error(error.name === 'TokenExpiredError' ? 'Ticket has expired' : error.message || 'Invalid or forged ticket signature');
   }
-
-  // Create a new ongoing ride
-  const ride = await Ride.create({
-    user: ticket.user,
-    ticket: ticket._id,
-    source: ticket.source,
-    destination: ticket.destination,
-    fare: ticket.fareEstimate,
-    distance: ticket.distanceEstimate,
-    checkInTime: new Date(),
-    status: 'Ongoing'
-  });
-
-  // Mark ticket as Used
-  ticket.status = 'Used';
-  await ticket.save();
-
-  res.status(200).json({ message: 'Checked in successfully', ride });
 });
 
 // @desc    Check out with QR code
