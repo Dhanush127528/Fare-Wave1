@@ -3,6 +3,7 @@ const dialogflow = require('@google-cloud/dialogflow');
 const uuid = require('uuid');
 const Ticket = require('../models/Ticket');
 const jwt = require('jsonwebtoken');
+const stationCoordinates = require('../utils/stationCoordinates');
 
 // @desc    Process chatbot message
 // @route   POST /api/chatbot/message
@@ -95,27 +96,48 @@ const processMessage = asyncHandler(async (req, res) => {
           reply = "Your wallet balance is too low! You need a minimum balance of ₹80 to book a ride. Please add money to your wallet on the Dashboard.";
           action = '/dashboard';
         } else {
+          // Calculate Real-World Fare using OSRM
+          let fareEstimate = 50;
+          let distanceEstimate = 15;
+          const srcCoords = stationCoordinates[source];
+          const destCoords = stationCoordinates[destination];
+          
+          if (srcCoords && destCoords) {
+            try {
+              const url = `http://router.project-osrm.org/route/v1/driving/${srcCoords.lon},${srcCoords.lat};${destCoords.lon},${destCoords.lat}?overview=false`;
+              const response = await fetch(url);
+              const data = await response.json();
+              if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+                distanceEstimate = Number((data.routes[0].distance / 1000).toFixed(1));
+                fareEstimate = Math.ceil(distanceEstimate * 2.5);
+                if (fareEstimate < 10) fareEstimate = 10;
+              }
+            } catch (err) {
+              console.error('Chatbot OSRM Routing Error:', err);
+            }
+          }
+
           // Generate a Cryptographically Verifiable QR Code using JWT
           const qrPayload = {
             source,
             destination,
             userId: req.user._id,
-            fareEstimate: 50,
-            distanceEstimate: 15,
+            fareEstimate,
+            distanceEstimate,
             jti: uuid.v4(),
             type: 'TRANSIT_TICKET'
           };
           const qrString = jwt.sign(qrPayload, process.env.JWT_SECRET, { expiresIn: '24h' });
         
-        const ticket = await Ticket.create({
-          user: req.user._id,
-          source,
-          destination,
-          qrCode: qrString,
-          status: 'Active',
-          fareEstimate: 50, // default dummy fare
-          distanceEstimate: 15,
-        });
+          const ticket = await Ticket.create({
+            user: req.user._id,
+            source,
+            destination,
+            qrCode: qrString,
+            status: 'Active',
+            fareEstimate,
+            distanceEstimate,
+          });
 
           reply = `Ticket successfully booked from ${source} to ${destination}! Here is your ticket.`;
           action = 'display_ticket';

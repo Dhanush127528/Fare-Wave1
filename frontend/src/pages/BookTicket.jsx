@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Navigation, IndianRupee, QrCode, ArrowRight, Download } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -21,6 +21,30 @@ const BookTicket = () => {
   const [loading, setLoading] = useState(false);
   const [ticket, setTicket] = useState(null);
   const [error, setError] = useState('');
+  const [calculatedFare, setCalculatedFare] = useState(null);
+  const [calculatedDistance, setCalculatedDistance] = useState(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+
+  useEffect(() => {
+    const fetchFare = async () => {
+      if (!source || !destination || source === destination) {
+        setCalculatedFare(null);
+        setCalculatedDistance(null);
+        return;
+      }
+      setIsCalculating(true);
+      try {
+        const { data } = await api.post('/ticket/calculate-fare', { source, destination });
+        setCalculatedFare(data.fare);
+        setCalculatedDistance(data.distance);
+      } catch (err) {
+        console.error('Error calculating fare', err);
+      } finally {
+        setIsCalculating(false);
+      }
+    };
+    fetchFare();
+  }, [source, destination]);
 
   const handleBook = async (e) => {
     e.preventDefault();
@@ -33,15 +57,11 @@ const BookTicket = () => {
 
     setLoading(true);
     try {
-      // Mock distance & fare calculation
-      const distance = Math.floor(Math.random() * 20) + 5; // 5 to 25 km
-      const fare = distance * 2.5; // ₹2.5 per km
-
       const { data } = await api.post('/ticket/book', {
         source,
         destination,
-        fareEstimate: fare,
-        distanceEstimate: distance
+        fareEstimate: calculatedFare || 50,
+        distanceEstimate: calculatedDistance || 15
       });
       setTicket(data);
     } catch (err) {
@@ -123,12 +143,25 @@ const BookTicket = () => {
               </select>
             </div>
 
+            {calculatedFare !== null && !isCalculating && (
+              <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700 flex justify-between items-center">
+                <div>
+                  <p className="text-gray-400 text-xs">Real-World Driving Distance</p>
+                  <p className="font-bold text-white">{calculatedDistance} km</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-gray-400 text-xs">Calculated Fare (₹2.5/km)</p>
+                  <p className="font-bold text-primary flex items-center justify-end"><IndianRupee className="h-4 w-4"/> {calculatedFare}</p>
+                </div>
+              </div>
+            )}
+
             <button 
               type="submit" 
-              disabled={loading || !source || !destination}
+              disabled={loading || isCalculating || !source || !destination || source === destination}
               className="w-full bg-gradient-to-r from-primary to-secondary py-4 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition-opacity"
             >
-              {loading ? 'Generating...' : 'Generate Ticket'}
+              {loading ? 'Generating...' : isCalculating ? 'Calculating Real Route...' : 'Generate Ticket'}
             </button>
           </form>
         </motion.div>
