@@ -4,6 +4,7 @@ const uuid = require('uuid');
 const Ticket = require('../models/Ticket');
 const jwt = require('jsonwebtoken');
 const stationCoordinates = require('../utils/stationCoordinates');
+const { autoCorrectStation } = require('../utils/fuzzyMatch');
 
 // @desc    Process chatbot message
 // @route   POST /api/chatbot/message
@@ -91,7 +92,12 @@ const processMessage = asyncHandler(async (req, res) => {
         }
       }
 
-      if (source && destination) {
+      // Auto-correct misspellings using Levenshtein distance
+      const validStations = Object.keys(stationCoordinates);
+      const correctedSource = autoCorrectStation(source, validStations);
+      const correctedDestination = autoCorrectStation(destination, validStations);
+
+      if (correctedSource && correctedDestination) {
         if (req.user.walletBalance < 80) {
           reply = "Your wallet balance is too low! You need a minimum balance of ₹80 to book a ride. Please add money to your wallet on the Dashboard.";
           action = '/dashboard';
@@ -99,8 +105,8 @@ const processMessage = asyncHandler(async (req, res) => {
           // Calculate Real-World Fare using OSRM
           let fareEstimate = 50;
           let distanceEstimate = 15;
-          const srcCoords = stationCoordinates[source];
-          const destCoords = stationCoordinates[destination];
+          const srcCoords = stationCoordinates[correctedSource];
+          const destCoords = stationCoordinates[correctedDestination];
           
           if (srcCoords && destCoords) {
             try {
@@ -119,8 +125,8 @@ const processMessage = asyncHandler(async (req, res) => {
 
           // Generate a Cryptographically Verifiable QR Code using JWT
           const qrPayload = {
-            source,
-            destination,
+            source: correctedSource,
+            destination: correctedDestination,
             userId: req.user._id,
             fareEstimate,
             distanceEstimate,
@@ -131,21 +137,21 @@ const processMessage = asyncHandler(async (req, res) => {
         
           const ticket = await Ticket.create({
             user: req.user._id,
-            source,
-            destination,
+            source: correctedSource,
+            destination: correctedDestination,
             qrCode: qrString,
             status: 'Active',
             fareEstimate,
             distanceEstimate,
           });
 
-          reply = `Ticket successfully booked from ${source} to ${destination}! Here is your ticket.`;
+          reply = `Ticket successfully booked from ${correctedSource} to ${correctedDestination}! Here is your ticket.`;
           action = 'display_ticket';
           ticketData = ticket;
         }
       } else {
-        // They didn't provide source/destination, so redirect them to the manual booking page
-        reply = "I couldn't quite catch the exact station names. Please make sure to use the exact station names, or you can book manually here!";
+        // They didn't provide source/destination, or it was too misspelled
+        reply = "I couldn't quite catch the exact station names. Please make sure to check your spelling, or you can book manually here!";
         action = '/book';
       }
     } else if (intentName.toLowerCase().includes('history')) {
