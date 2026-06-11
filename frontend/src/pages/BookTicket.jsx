@@ -11,8 +11,9 @@ const MOCK_LOCATIONS = [
   'Kadubeesanahalli', 'Kalyan Nagar', 'Kengeri', 'Koramangala', 'KR Market', 
   'KR Puram', 'Madiwala', 'Majestic', 'Malleshwaram', 'Marathahalli', 
   'Mekhri Circle', 'MG Road', 'Peenya', 'Rajajinagar', 'RT Nagar', 
-  'Sarjapur Road', 'Shantinagar', 'Shivajinagar', 'Silk Board', 'Ulsoor', 
-  'Whitefield', 'Yelahanka', 'Yeshwanthpur'
+  'Sarjapur Road', 'Shantinagar', 'Shivajinagar', 'Silk Board', 
+  'Silk Institute', 'Ulsoor', 'Vajarahalli', 'Whitefield', 
+  'Yelahanka', 'Yeshwanthpur'
 ].sort();
 
 const BookTicket = () => {

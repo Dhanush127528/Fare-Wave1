@@ -36,7 +36,9 @@ const stationCoordinates = {
   'Ulsoor': { lat: 12.9815, lon: 77.6253 },
   'Whitefield': { lat: 12.9698, lon: 77.7499 },
   'Yelahanka': { lat: 13.1007, lon: 77.5963 },
-  'Yeshwanthpur': { lat: 13.0280, lon: 77.5409 }
+  'Yeshwanthpur': { lat: 13.0280, lon: 77.5409 },
+  'Silk Institute': { lat: 12.8715, lon: 77.5348 },
+  'Vajarahalli': { lat: 12.8837, lon: 77.5372 }
 };
 
 module.exports = stationCoordinates;
